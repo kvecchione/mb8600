@@ -46,6 +46,12 @@ parser.add_argument(
 parser.add_argument("--mhost", default=os.getenv("MODEM_HOST", "192.168.100.1"), type=str, help="Modem IP.")
 parser.add_argument("--muser", default=os.getenv("MODEM_USER", "admin"), help="InfluxDB Username")
 parser.add_argument("--mpw", default=os.getenv("MODEM_PASS", "password"), help="InfluxDB Password")
+parser.add_argument(
+    "--mtimeout",
+    default=os.getenv("MODEM_TIMEOUT", 30),
+    type=float,
+    help="Timeout in seconds for modem HTTP requests.",
+)
 parser.add_argument("--loglevel", default=os.getenv("LOG_LEVEL", "INFO").upper(), help="InfluxDB Password")
 
 args = parser.parse_args()
@@ -72,7 +78,7 @@ def create_or_use_database(client, db_name):
 
 
 if __name__ == "__main__":
-    my_modem = MB8600(args.mhost, args.muser, args.mpw)
+    my_modem = MB8600(args.mhost, args.muser, args.mpw, timeout=args.mtimeout)
     client = InfluxDBClient(args.host, args.port, args.user, args.pw, args.db)
 
     try:
@@ -103,6 +109,8 @@ if __name__ == "__main__":
             with open("data.json", "w") as f:
                 f.write(json.dumps(data, indent=2))
             logger.info("Imported data")
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timed out talking to modem after {args.mtimeout}s: {e}")
         except requests.exceptions.ConnectionError as e:
             # This is a common error for connection failure. Report just the name of the exception to reduce log bloat.
             logger.error(f"Exception raised: {e}")

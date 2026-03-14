@@ -35,6 +35,7 @@ class MB8600:
         password: Optional[str] = None,
         secure: bool = True,
         verify: bool = False,
+        timeout: float = 10.0,
     ):
 
         self.host = host
@@ -43,6 +44,7 @@ class MB8600:
         self.hnap_url = f"http{'s' if secure else ''}://{host}/HNAP/"
         self.session = requests.session()
         self.session.verify = verify
+        self.timeout = timeout
         self._cred_regex = re.compile("^[A-Za-z0-9]+$")
 
     def _millis(self) -> int:
@@ -69,6 +71,7 @@ class MB8600:
                 "SOAPAction": action_uri,
                 "HNAP_AUTH": self._hnap_auth(private_key, f"{self._millis()}{action_uri}"),
             },
+            timeout=self.timeout,
         )
 
         try:
